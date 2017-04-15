@@ -4,129 +4,142 @@ package cfe
 
 import (
   "fmt"
-  "io/ioutil"
+  "encoding/binary"
+  "math"
+  "crypto/rand"
+  "bytes"
 )
 
 type Cfe struct {
   securityParameter int
   minPaddingSizeBytes int
   numBytesInSingleEncryption int
-  my_nmpke nmpke
+  nmpke *Nmpke
 }
 const MINPADDING = 44
 
-func CFE(securityParameter int) *cfe {
-
+func CFE(securityParameter int) *Cfe {
   return &Cfe{
   		securityParameter: securityParameter,
   		minPaddingSizeBytes: MINPADDING,
   		numBytesInSingleEncryption: securityParameter/8 - MINPADDING,
-      my_nmpke : Nmpke.NMPKE(securityParameter)
+      nmpke : NMPKE(securityParameter),
   	}
-
-  /*
-  public CFE(int securityParameter) {
-      this.securityParameter = securityParameter;
-      minPaddingSizeBytes = 44;
-      numBytesInSingleEncryption = securityParameter / 8 - minPaddingSizeBytes;
-
-      nmPKE = new NMPKE(securityParameter);
-  */
-
 }
 
-struct pair_int {
-  x, y int
-}
-
-func (c cfe) keygen(f []pair_int, rCT func(int, []byte) []byte) int {
+func (c *Cfe) keygen(f []Pair, rCT map[int]([]byte)) int {
   var garblingKey int = 0
 
+  rPT := make(map[int][]byte)
 
-/*
-public long keygen(ArrayList<Pair<Integer, Integer>> f, Map<Integer, byte[]> rCT) {
-    long garblingKey = 0;
-
-    Map<Integer, byte[]> rPT = new HashMap<>();
-
-    int it = 0;
-    for (Map.Entry<Integer, byte[]> entry : rCT.entrySet()) {
-        Integer key = entry.getKey();
-        byte[] value = entry.getValue();
-        rPT.put(key, nmPKE.decrypt(value));
-    }
-
-
-    byte[] rs_required = new byte[f.size() * 4];
-
-    for (int i = 0; i < f.size(); i++) {
-        int requiredBlock = (int) Math.floor((double) f.get(i).getL() / (double) (numBytesInSingleEncryption / 4));
-        int requiredElement = f.get(i).getL() % (numBytesInSingleEncryption / 4);
-        byte temp[] = rPT.get(requiredBlock);
-        System.arraycopy(temp, requiredElement * 4,
-                rs_required, i * 4, 4);
-    }
-
-    int[] rs = byteArraytoIntArray(rs_required);
-
-    for (int i = 0; i < f.size(); i++) {
-        garblingKey += rs[i] * f.get(i).getR();
-    }
-
-    return garblingKey;
-}
-*/
-
-}
-
-func Enc(pt []int) [][]byte, []int {
-
-/*
-public Pair<byte[][], int[]> Enc(int[] PT) {
-    int R[] = createR(PT.length);
-
-    byte[] Rbytes = intArraytoByteArray(R);
-
-    byte[][] ct1 = new byte[Rbytes.length / numBytesInSingleEncryption][securityParameter / 8];
-
-    for (int i = 0; i < (int) Math.ceil((double) Rbytes.length / (double) numBytesInSingleEncryption); i++) {
-        byte[] temp = new byte[numBytesInSingleEncryption];
-        System.arraycopy(Rbytes, i * numBytesInSingleEncryption, temp, 0, numBytesInSingleEncryption);
-        ct1[i] = nmPKE.encrypt(temp);
-    }
-
-    int[] ct2 = new int[PT.length];
-
-    for (int i = 0; i < PT.length; i++) {
-        ct2[i] = R[i] + PT[i];
-    }
-
-    Pair<byte[][], int[]> CT = new Pair<byte[][], int[]>();
-
-    CT.set(ct1, ct2);
-
-    return CT;
-}
-
-*/
-
-}
-
-
-func Dec(f []pair_int, ct2 []int, garblingKey int ) int {
-
-  /*
-  public long Dec(ArrayList<Pair<Integer, Integer>> f, int[] ct2, long garblingKey) {
-      long output = -garblingKey;
-
-      for (int i = 0; i < ct2.length; i++) {
-          output += ct2[i] * f.get(i).getR();
-      }
-
-      return output;
+  for key, value := range rCT {
+    rPT[key], _ = c.nmpke.Decrypt(value)
   }
 
-  */
+  rs_required := make([]byte, len(f) * 4)
+
+  for i := 0; i < len(f); i ++ {
+    requiredBlock := int(math.Floor(f[i].GetL().(float64) * 4.0 / float64(c.numBytesInSingleEncryption) ))
+    requiredElement := f[i].GetL().(int) % (c.numBytesInSingleEncryption/ 4)
+    temp := rPT[requiredBlock]
+    copy(temp[requiredElement * 4: (requiredElement + 1) * 4],
+      rs_required[i * 4 : (i + 1) * 4])
+
+  }
+
+  rs := make([]int, len(f))
+
+
+  for i := 0; i < len(f); i ++ {
+    garblingKey += rs[i] * f[i].GetR().(int)
+  }
+  return garblingKey
+}
+
+func intArraytoByteArray(iarr []int) []byte {
+  l := len(iarr)
+  barr := make([]byte, l * 4)
+  for i := 0; i < l; i ++ {
+    buf := new(bytes.Buffer)
+    err := binary.Write(buf, binary.LittleEndian, iarr[i])
+    copy(buf.Bytes(), barr[i * 4 : (i + 1) * 4] )
+    if err != nil {
+        fmt.Println("binary.Write failed:", err)
+    }
+  }
+  return barr
+}
+
+func byteArraytoIntArray(barr []byte) []int {
+  l := len(barr)/4
+  r := make([]int, l)
+  for i := 0; i < l; i ++ {
+    val, _ := binary.Varint(barr[i * 4 : (i + 1) * 4])
+    r[i] = int(val)
+  }
+  return r
+}
+
+func makeRandomByteArray(n int) []byte{
+  buff := make([]byte, n)
+  _, err := rand.Read(buff)
+  check(err)
+  return buff
+}
+
+func createR(n int) []int {
+
+  return byteArraytoIntArray(makeRandomByteArray(n))
+
+}
+
+func make2d(n, m int) [][]byte {
+  twoD := make([][]byte, n)
+
+   for i := 0; i < n; i++ {
+       twoD[i] = make([]byte, m)
+   }
+
+   return twoD
+}
+
+func (c *Cfe) Enc(pt []int) Pair {
+
+    R := createR(len(pt))
+
+    Rbytes := intArraytoByteArray(R)
+
+    ct1 := make2d(len(Rbytes) / c.numBytesInSingleEncryption, c.securityParameter / 8)
+
+    n := int(math.Ceil(float64(len(Rbytes)) / float64(c.numBytesInSingleEncryption)))
+
+    for i := 0; i < n; i++ {
+        ct1[i], _ = c.nmpke.Encrypt(Rbytes[i*c.numBytesInSingleEncryption: (i+1)* c.numBytesInSingleEncryption])
+    }
+
+    ct2 := make([]int, len(pt))
+
+    for i := 0; i < len(pt); i++ {
+      ct2[i] = R[i] + pt[i]
+    }
+
+    var CT Pair
+    CT.Set(ct1, ct2)
+
+    return CT
+}
+
+
+func Dec(f []Pair, ct2 []int, garblingKey int ) int {
+
+  output := - garblingKey
+
+  for i := 0; i < len(ct2); i++ {
+    val, _ :=  f[i].GetR().(int)
+    output += ct2[i] * val
+  }
+
+  return output
 }
 
 
@@ -140,45 +153,4 @@ func GenerateRandomBytes(n int) ([]byte, error) {
   }
 
   return b, nil
-}
-
-
-func createR(size int) []int {
-  var R [size]int
-
-
-  /*
-  private int[] createR(int size) {
-      int[] R = new int[size];
-      SecureRandom rand = new SecureRandom();
-      for (int i = 0; i < size; i++) {
-          R[i] = rand.nextInt();
-      }
-      return R;
-  }
-  */
-}
-
-func byteArraytoIntArray(byteArray []byte) []int {
-
-/*
-private int[] byteArraytoIntArray(byte[] byteArray) {
-    IntBuffer intBuf = ByteBuffer.wrap(byteArray).order(ByteOrder.BIG_ENDIAN).asIntBuffer();
-    int[] array = new int[intBuf.remaining()];
-    intBuf.get(array);
-    return array;
-}
-*/
-}
-
-func intArraytoByteArray( intArray []int) []byte {
-  /*
-  private byte[] intArraytoByteArray(int[] intArray) {
-      ByteBuffer byteBuffer = ByteBuffer.allocate(intArray.length * 4);
-      IntBuffer intBuffer = byteBuffer.asIntBuffer();
-      intBuffer.put(intArray);
-
-      return byteBuffer.array();
-  }
-  */
 }

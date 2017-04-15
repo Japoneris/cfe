@@ -1,15 +1,15 @@
 //This is the class implementation of keypair
 //Voir si la keypair est bien une string.
-package pair
+package cfe
 
-import 	"fmt"
+
 
 type Pair struct {
-  l, r string
+    L, R interface{}
 }
 
-func (h Pair) GetL() string {return h.l }
-func (h Pair) GetR() string {return h.r }
-func (h *Pair) Set(l, r string)  {h.l = l; h.r = r }
-func (h *Pair) SetL(l string)  {h.l = l}
-func (h *Pair) SetR(r string) {h.r = r}
+func (h Pair) GetL() interface{} {return h.L }
+func (h Pair) GetR() interface{} {return h.R }
+func (h *Pair) Set(l interface{}, r interface{})  {h.L = l; h.R = r }
+func (h *Pair) SetL(l interface{})  {h.L = l}
+func (h *Pair) SetR(r interface{}) {h.R = r}
