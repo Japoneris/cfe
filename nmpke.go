@@ -73,7 +73,6 @@ func (n *Nmpke) PublicKey() *rsa.PublicKey {
 }
 
 func Encrypt(publicKey *rsa.PublicKey, plaintext []byte) ([]byte, error) {
-  /*func EncryptPKCS1v15(rand io.Reader, pub *PublicKey, msg []byte) ([]byte, error)*/
 
     enc, err := rsa.EncryptPKCS1v15(rand.Reader, publicKey, plaintext)
 
@@ -83,7 +82,6 @@ func Encrypt(publicKey *rsa.PublicKey, plaintext []byte) ([]byte, error) {
   }
 
 func (n *Nmpke) Encrypt(plaintext []byte) ([]byte, error) {
-  /*func EncryptPKCS1v15(rand io.Reader, pub *PublicKey, msg []byte) ([]byte, error)*/
 
     enc, err := rsa.EncryptPKCS1v15(rand.Reader, n.PublicKey(), plaintext)
 
@@ -94,8 +92,6 @@ func (n *Nmpke) Encrypt(plaintext []byte) ([]byte, error) {
 
 
 func (n *Nmpke) Decrypt(ciphertext []byte) ([]byte, error) {
-
-  /*func (priv *PrivateKey) Decrypt(rand io.Reader, ciphertext []byte, opts crypto.DecrypterOpts) (plaintext []byte, err error)*/
 
   plaintext, err := n.privateKey.Decrypt(rand.Reader, ciphertext, nil)
 
