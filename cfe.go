@@ -12,10 +12,10 @@ import (
 )
 
 type Cfe struct {
-  securityParameter int
-  minPaddingSizeBytes int
-  numBytesInSingleEncryption int
-  nmpke *Nmpke
+  securityParameter int           // Number of bit
+  minPaddingSizeBytes int         // Padding in Bytes
+  numBytesInSingleEncryption int  // Max Bytes per encryption
+  nmpke *Nmpke                    // Key structure
 }
 const MINPADDING = 44
 
@@ -28,20 +28,18 @@ func CFE(securityParameter int) *Cfe {
   	}
 }
 
-
 func (c *Cfe) Keygen(f []Pair, rCT map[int]([]byte)) int {
+
   var garblingKey int = 0
 
   rPT := make(map[int][]byte)
 
-  //fmt.Println(rCT)
   for key, value := range rCT {
-    //fmt.Println("Add a value to rPT")
+
     val, err := c.nmpke.Decrypt(value)
     if err != nil {
       fmt.Println("Keygenbug")
       panic(err)
-
     }
     rPT[key] = val
 
@@ -122,12 +120,13 @@ func make2d(n, m int) [][]byte {
 
 func (c *Cfe) Enc(pt []int) Pair {
 
-    var l = len(pt)
+    var l = len(pt) //Size of the array to encrypt
     var lb = l * 4
-    var crac = c.numBytesInSingleEncryption
+    var crac = c.numBytesInSingleEncryption // Block size
 
-    R := createR(l)
-    Rbytes := intArraytoByteArray(R)
+    //R := createR(l) // Create a random array of int of size l
+    Rbytes := makeRandomByteArray(lb)
+    R := byteArraytoIntArray(Rbytes)
 
     n := int(math.Ceil(float64(lb) / float64(crac)))
     ct1 := make2d(n, c.securityParameter / 8) // WARNING Normalement, pas de n

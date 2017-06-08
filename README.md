@@ -1,12 +1,12 @@
-Ceci est une implémentatino Go de [CFE](https://github.com/eSMC/CFE) écrit en Java à l'origine.
+Transcoding from java to  Go of [CFE](https://github.com/eSMC/CFE)
 
-This is a go implementation of [CFE](https://github.com/eSMC/CFE) java lib.
+Faster than the original program
 
-# CFE : Controlled Functional Encryption
+TODO: 
 
-## What is it ?
-
-Functional Encryption is a encryption scheme that allow people with a secret key to only be able to compute a particular function over a ciphertext, and obtain a clear result.
-
+* make documentation
+* check methods
+* code refacto
+* go easy to use
 
 
