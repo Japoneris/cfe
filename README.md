@@ -8,5 +8,5 @@ TODO:
 * check methods
 * code refacto
 * go easy to use
-
++ use me for a dummy project
 
